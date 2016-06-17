@@ -344,7 +344,7 @@ function askApiAi(recipientId, messageText) {
                 // payload.content.fulfillment.speech = item.responses[i];
                 // payload.content.fulfillment.links = item.links;
                 //sendTextMessage(recipientId, item.responses[i]);
-                sendTextMessage(recipientId, item.responses[i]);
+                sendTextMessage(recipientId, item.responses[i].text);
             }
         } else {
             sendTextMessage(recipientId, result.fulfillment.speech);
