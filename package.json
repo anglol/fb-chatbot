@@ -1,7 +1,7 @@
 {
-  "name": "shrill-moon",
+  "name": "facebook-bot-messenger",
   "version": "1.0.0",
-  "description": "My app description",
+  "description": "Facebook Bot Messenger experiments.",
   "scripts": {
     "build": "gulp build",
     "build:production": "gulp build --production",
