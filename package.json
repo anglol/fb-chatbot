@@ -1,7 +1,7 @@
 {
-  "name": "messenger-get-started",
+  "name": "botbank-distributionlab-experiments",
   "version": "1.0.0",
-  "description": "Get started example for Messenger Platform",
+  "description": "First experimentation with Facebook bot messenger.",
   "main": "index.js",
   "scripts": {
     "start": "node app.js",
@@ -12,13 +12,15 @@
     "type": "git",
     "url": "https://source.developers.google.com/p/messenger-get-started/r/default"
   },
-  "author": "Facebook",
-  "license": "ISC",
+  "author": "Distribution Lab",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.0",
     "config": "^1.20.4",
     "express": "^4.13.4",
-    "request": "^2.72.0"
+    "request": "^2.72.0",
+    "apiai": "^2.0.5",
+    "jsonfile": "^2.3.1"
   },
   "engines": {
     "node": "~4.1.2"

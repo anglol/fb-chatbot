@@ -6,22 +6,35 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-
 /* jshint node: true, devel: true */
 'use strict';
 
-const 
-  bodyParser = require('body-parser'),
-  config = require('config'),
-  crypto = require('crypto'),
-  express = require('express'),
-  https = require('https'),  
-  request = require('request');
+const
+    bodyParser = require('body-parser'),
+    config = require('config'),
+    crypto = require('crypto'),
+    express = require('express'),
+    https = require('https'),
+    request = require('request'),
+    apiai = require('apiai'),
+    jsonfile = require('jsonfile');
 
 var app = express();
+var apiaiClient = apiai("f83c20e2568641128261f275d8d392b2");
+
+var leechedFile = './flux/leeched.json';
+var userFile = "./flux/user.json";
+var infoPrefix = "info.";
+
+var data = jsonfile.readFileSync(leechedFile);
+var userData = jsonfile.readFileSync(userFile);
+
+for (var attrname in userData) data[attrname] = userData[attrname];
 
 app.set('port', process.env.PORT || 5000);
-app.use(bodyParser.json({ verify: verifyRequestSignature }));
+app.use(bodyParser.json({
+    verify: verifyRequestSignature
+}));
 app.use(express.static('public'));
 
 /*
@@ -31,23 +44,23 @@ app.use(express.static('public'));
  */
 
 // App Secret can be retrieved from the App Dashboard
-const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ? 
-  process.env.MESSENGER_APP_SECRET :
-  config.get('appSecret');
+const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ?
+    process.env.MESSENGER_APP_SECRET :
+    config.get('appSecret');
 
 // Arbitrary value used to validate a webhook
 const VALIDATION_TOKEN = (process.env.MESSENGER_VALIDATION_TOKEN) ?
-  (process.env.MESSENGER_VALIDATION_TOKEN) :
-  config.get('validationToken');
+    (process.env.MESSENGER_VALIDATION_TOKEN) :
+    config.get('validationToken');
 
 // Generate a page access token for your page from the App Dashboard
 const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
-  (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
-  config.get('pageAccessToken');
+    (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
+    config.get('pageAccessToken');
 
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
-  console.error("Missing config values");
-  process.exit(1);
+    console.error("Missing config values");
+    process.exit(1);
 }
 
 /*
@@ -56,14 +69,19 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
  *
  */
 app.get('/webhook', function(req, res) {
-  if (req.query['hub.mode'] === 'subscribe' &&
-      req.query['hub.verify_token'] === VALIDATION_TOKEN) {
-    console.log("Validating webhook");
-    res.status(200).send(req.query['hub.challenge']);
-  } else {
-    console.error("Failed validation. Make sure the validation tokens match.");
-    res.sendStatus(403);          
-  }  
+    if (req.query['hub.mode'] === 'subscribe' &&
+        req.query['hub.verify_token'] === VALIDATION_TOKEN) {
+        console.log("Validating webhook");
+        res.status(200).send(req.query['hub.challenge']);
+    } else {
+        console.error("Failed validation. Make sure the validation tokens match.");
+        res.sendStatus(403);
+    }
+});
+
+app.get('/ask', function(req, res) {
+  console.log(req.query['message']);
+  askApiAi('AZERTYUIOP123456789000', req.query['message']);
 });
 
 
@@ -74,40 +92,40 @@ app.get('/webhook', function(req, res) {
  * https://developers.facebook.com/docs/messenger-platform/implementation#subscribe_app_pages
  *
  */
-app.post('/webhook', function (req, res) {
+app.post('/webhook', function(req, res) {
 
-  var data = req.body;
+    var data = req.body;
 
-  // Make sure this is a page subscription
-  if (data.object == 'page') {
-    // Iterate over each entry
-    // There may be multiple if batched
-    data.entry.forEach(function(pageEntry) {
-      var pageID = pageEntry.id;
-      var timeOfEvent = pageEntry.time;
+    // Make sure this is a page subscription
+    if (data.object == 'page') {
+        // Iterate over each entry
+        // There may be multiple if batched
+        data.entry.forEach(function(pageEntry) {
+            var pageID = pageEntry.id;
+            var timeOfEvent = pageEntry.time;
 
-      // Iterate over each messaging event
-      pageEntry.messaging.forEach(function(messagingEvent) {
-        if (messagingEvent.optin) {
-          receivedAuthentication(messagingEvent);
-        } else if (messagingEvent.message) {
-          receivedMessage(messagingEvent);
-        } else if (messagingEvent.delivery) {
-          receivedDeliveryConfirmation(messagingEvent);
-        } else if (messagingEvent.postback) {
-          receivedPostback(messagingEvent);
-        } else {
-          console.log("Webhook received unknown messagingEvent: ", messagingEvent);
-        }
-      });
-    });
+            // Iterate over each messaging event
+            pageEntry.messaging.forEach(function(messagingEvent) {
+                if (messagingEvent.optin) {
+                    receivedAuthentication(messagingEvent);
+                } else if (messagingEvent.message) {
+                    receivedMessage(messagingEvent);
+                } else if (messagingEvent.delivery) {
+                    receivedDeliveryConfirmation(messagingEvent);
+                } else if (messagingEvent.postback) {
+                    receivedPostback(messagingEvent);
+                } else {
+                    console.log("Webhook received unknown messagingEvent: ", messagingEvent);
+                }
+            });
+        });
 
-    // Assume all went well.
-    //
-    // You must send back a 200, within 20 seconds, to let us know you've 
-    // successfully received the callback. Otherwise, the request will time out.
-    res.sendStatus(200);
-  }
+        // Assume all went well.
+        //
+        // You must send back a 200, within 20 seconds, to let us know you've 
+        // successfully received the callback. Otherwise, the request will time out.
+        res.sendStatus(200);
+    }
 });
 
 /*
@@ -119,25 +137,25 @@ app.post('/webhook', function (req, res) {
  *
  */
 function verifyRequestSignature(req, res, buf) {
-  var signature = req.headers["x-hub-signature"];
+    var signature = req.headers["x-hub-signature"];
 
-  if (!signature) {
-    // For testing, let's log an error. In production, you should throw an 
-    // error.
-    console.error("Couldn't validate the signature.");
-  } else {
-    var elements = signature.split('=');
-    var method = elements[0];
-    var signatureHash = elements[1];
+    if (!signature) {
+        // For testing, let's log an error. In production, you should throw an 
+        // error.
+        console.error("Couldn't validate the signature.");
+    } else {
+        var elements = signature.split('=');
+        var method = elements[0];
+        var signatureHash = elements[1];
 
-    var expectedHash = crypto.createHmac('sha1', APP_SECRET)
-                        .update(buf)
-                        .digest('hex');
+        var expectedHash = crypto.createHmac('sha1', APP_SECRET)
+            .update(buf)
+            .digest('hex');
 
-    if (signatureHash != expectedHash) {
-      throw new Error("Couldn't validate the request signature.");
+        if (signatureHash != expectedHash) {
+            throw new Error("Couldn't validate the request signature.");
+        }
     }
-  }
 }
 
 /*
@@ -149,24 +167,24 @@ function verifyRequestSignature(req, res, buf) {
  *
  */
 function receivedAuthentication(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var timeOfAuth = event.timestamp;
+    var senderID = event.sender.id;
+    var recipientID = event.recipient.id;
+    var timeOfAuth = event.timestamp;
 
-  // The 'ref' field is set in the 'Send to Messenger' plugin, in the 'data-ref'
-  // The developer can set this to an arbitrary value to associate the 
-  // authentication callback with the 'Send to Messenger' click event. This is
-  // a way to do account linking when the user clicks the 'Send to Messenger' 
-  // plugin.
-  var passThroughParam = event.optin.ref;
+    // The 'ref' field is set in the 'Send to Messenger' plugin, in the 'data-ref'
+    // The developer can set this to an arbitrary value to associate the 
+    // authentication callback with the 'Send to Messenger' click event. This is
+    // a way to do account linking when the user clicks the 'Send to Messenger' 
+    // plugin.
+    var passThroughParam = event.optin.ref;
 
-  console.log("Received authentication for user %d and page %d with pass " +
-    "through param '%s' at %d", senderID, recipientID, passThroughParam, 
-    timeOfAuth);
+    console.log("Received authentication for user %d and page %d with pass " +
+        "through param '%s' at %d", senderID, recipientID, passThroughParam,
+        timeOfAuth);
 
-  // When an authentication is received, we'll send a message back to the sender
-  // to let them know it was successful.
-  sendTextMessage(senderID, "Authentication successful");
+    // When an authentication is received, we'll send a message back to the sender
+    // to let them know it was successful.
+    sendTextMessage(senderID, "Authentication successful");
 }
 
 
@@ -185,50 +203,50 @@ function receivedAuthentication(event) {
  * 
  */
 function receivedMessage(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var timeOfMessage = event.timestamp;
-  var message = event.message;
+    var senderID = event.sender.id;
+    var recipientID = event.recipient.id;
+    var timeOfMessage = event.timestamp;
+    var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:", 
-    senderID, recipientID, timeOfMessage);
-  console.log(JSON.stringify(message));
+    console.log("Received message for user %d and page %d at %d with message:",
+        senderID, recipientID, timeOfMessage);
+    console.log(JSON.stringify(message));
 
-  var messageId = message.mid;
+    var messageId = message.mid;
 
-  // You may get a text or attachment but not both
-  var messageText = message.text;
-  var messageAttachments = message.attachments;
+    // You may get a text or attachment but not both
+    var messageText = message.text;
+    var messageAttachments = message.attachments;
 
 
-  if (messageText) {
+    if (messageText) {
 
-    // If we receive a text message, check to see if it matches any special
-    // keywords and send back the corresponding example. Otherwise, just echo
-    // the text we received.
-    switch (messageText) {
-      case 'image':
-        sendImageMessage(senderID);
-        break;
+        // If we receive a text message, check to see if it matches any special
+        // keywords and send back the corresponding example. Otherwise, just echo
+        // the text we received.
+        switch (messageText) {
+            case 'image':
+                sendImageMessage(senderID);
+                break;
 
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
+            case 'button':
+                sendButtonMessage(senderID);
+                break;
 
-      case 'generic':
-        sendGenericMessage(senderID);
-        break;
+            case 'generic':
+                sendGenericMessage(senderID);
+                break;
 
-      case 'receipt':
-        sendReceiptMessage(senderID);
-        break;
+            case 'receipt':
+                sendReceiptMessage(senderID);
+                break;
 
-      default:
-        sendTextMessage(senderID, messageText);
+            default:
+                askApiAi(senderID, messageText);
+        }
+    } else if (messageAttachments) {
+        askApiAi(senderID, "Message with attachment received");
     }
-  } else if (messageAttachments) {
-    sendTextMessage(senderID, "Message with attachment received");
-  }
 }
 
 
@@ -240,21 +258,21 @@ function receivedMessage(event) {
  *
  */
 function receivedDeliveryConfirmation(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var delivery = event.delivery;
-  var messageIDs = delivery.mids;
-  var watermark = delivery.watermark;
-  var sequenceNumber = delivery.seq;
+    var senderID = event.sender.id;
+    var recipientID = event.recipient.id;
+    var delivery = event.delivery;
+    var messageIDs = delivery.mids;
+    var watermark = delivery.watermark;
+    var sequenceNumber = delivery.seq;
 
-  if (messageIDs) {
-    messageIDs.forEach(function(messageID) {
-      console.log("Received delivery confirmation for message ID: %s", 
-        messageID);
-    });
-  }
+    if (messageIDs) {
+        messageIDs.forEach(function(messageID) {
+            console.log("Received delivery confirmation for message ID: %s",
+                messageID);
+        });
+    }
 
-  console.log("All message before %d were delivered.", watermark);
+    console.log("All message before %d were delivered.", watermark);
 }
 
 
@@ -266,20 +284,20 @@ function receivedDeliveryConfirmation(event) {
  * 
  */
 function receivedPostback(event) {
-  var senderID = event.sender.id;
-  var recipientID = event.recipient.id;
-  var timeOfPostback = event.timestamp;
+    var senderID = event.sender.id;
+    var recipientID = event.recipient.id;
+    var timeOfPostback = event.timestamp;
 
-  // The 'payload' param is a developer-defined field which is set in a postback 
-  // button for Structured Messages. 
-  var payload = event.postback.payload;
+    // The 'payload' param is a developer-defined field which is set in a postback 
+    // button for Structured Messages. 
+    var payload = event.postback.payload;
 
-  console.log("Received postback for user %d and page %d with payload '%s' " + 
-    "at %d", senderID, recipientID, payload, timeOfPostback);
+    console.log("Received postback for user %d and page %d with payload '%s' " +
+        "at %d", senderID, recipientID, payload, timeOfPostback);
 
-  // When a postback is called, we'll send a message back to the sender to 
-  // let them know it was successful
-  sendTextMessage(senderID, "Postback called");
+    // When a postback is called, we'll send a message back to the sender to 
+    // let them know it was successful
+    sendTextMessage(senderID, "Postback called");
 }
 
 
@@ -288,21 +306,52 @@ function receivedPostback(event) {
  *
  */
 function sendImageMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "image",
-        payload: {
-          url: "http://i.imgur.com/zYIlgBl.png"
+    var messageData = {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            attachment: {
+                type: "image",
+                payload: {
+                    url: "http://i.imgur.com/zYIlgBl.png"
+                }
+            }
         }
-      }
-    }
-  };
+    };
 
-  callSendAPI(messageData);
+    callSendAPI(messageData);
+}
+
+function askApiAi(recipientId, messageText) {
+    var request = apiaiClient.textRequest(messageText, { 'sessionId': recipientId });
+
+    request.on('error', function(error) {
+        console.log(error);
+    });
+
+    request.on('response', function(response) {
+
+        var result = response.result;
+        // Case of FAQ info questions
+        if (result && result.action && result.action.startsWith(infoPrefix)) {
+
+            var id = result.action.substr(infoPrefix.length);
+
+            // Speech is retrieved from our local flat JSON file
+            var item = data[id];
+            for (var i in item.responses) {
+                // payload.content.fulfillment.speech = item.responses[i];
+                // payload.content.fulfillment.links = item.links;
+                //sendTextMessage(recipientId, item.responses[i]);
+                sendTextMessage(recipientId, item.responses[i]);
+            }
+        } else {
+            sendTextMessage(recipientId, result.fulfillment.speech);
+        }
+
+    });
+    request.end();
 }
 
 /*
@@ -310,16 +359,16 @@ function sendImageMessage(recipientId) {
  *
  */
 function sendTextMessage(recipientId, messageText) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText
-    }
-  };
+    var messageData = {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            text: messageText
+        }
+    };
 
-  callSendAPI(messageData);
+    callSendAPI(messageData);
 }
 
 /*
@@ -327,31 +376,31 @@ function sendTextMessage(recipientId, messageText) {
  *
  */
 function sendButtonMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "button",
-          text: "This is test text",
-          buttons:[{
-            type: "web_url",
-            url: "https://www.oculus.com/en-us/rift/",
-            title: "Open Web URL"
-          }, {
-            type: "postback",
-            title: "Call Postback",
-            payload: "Developer defined postback"
-          }]
+    var messageData = {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            attachment: {
+                type: "template",
+                payload: {
+                    template_type: "button",
+                    text: "This is test text",
+                    buttons: [{
+                        type: "web_url",
+                        url: "https://www.oculus.com/en-us/rift/",
+                        title: "Open Web URL"
+                    }, {
+                        type: "postback",
+                        title: "Call Postback",
+                        payload: "Developer defined postback"
+                    }]
+                }
+            }
         }
-      }
-    }
-  };  
+    };
 
-  callSendAPI(messageData);
+    callSendAPI(messageData);
 }
 
 /*
@@ -359,50 +408,50 @@ function sendButtonMessage(recipientId) {
  *
  */
 function sendGenericMessage(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "generic",
-          elements: [{
-            title: "rift",
-            subtitle: "Next-generation virtual reality",
-            item_url: "https://www.oculus.com/en-us/rift/",               
-            image_url: "http://messengerdemo.parseapp.com/img/rift.png",
-            buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/rift/",
-              title: "Open Web URL"
-            }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for first bubble",
-            }],
-          }, {
-            title: "touch",
-            subtitle: "Your Hands, Now in VR",
-            item_url: "https://www.oculus.com/en-us/touch/",               
-            image_url: "http://messengerdemo.parseapp.com/img/touch.png",
-            buttons: [{
-              type: "web_url",
-              url: "https://www.oculus.com/en-us/touch/",
-              title: "Open Web URL"
-            }, {
-              type: "postback",
-              title: "Call Postback",
-              payload: "Payload for second bubble",
-            }]
-          }]
+    var messageData = {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            attachment: {
+                type: "template",
+                payload: {
+                    template_type: "generic",
+                    elements: [{
+                        title: "rift",
+                        subtitle: "Next-generation virtual reality",
+                        item_url: "https://www.oculus.com/en-us/rift/",
+                        image_url: "http://messengerdemo.parseapp.com/img/rift.png",
+                        buttons: [{
+                            type: "web_url",
+                            url: "https://www.oculus.com/en-us/rift/",
+                            title: "Open Web URL"
+                        }, {
+                            type: "postback",
+                            title: "Call Postback",
+                            payload: "Payload for first bubble",
+                        }],
+                    }, {
+                        title: "touch",
+                        subtitle: "Your Hands, Now in VR",
+                        item_url: "https://www.oculus.com/en-us/touch/",
+                        image_url: "http://messengerdemo.parseapp.com/img/touch.png",
+                        buttons: [{
+                            type: "web_url",
+                            url: "https://www.oculus.com/en-us/touch/",
+                            title: "Open Web URL"
+                        }, {
+                            type: "postback",
+                            title: "Call Postback",
+                            payload: "Payload for second bubble",
+                        }]
+                    }]
+                }
+            }
         }
-      }
-    }
-  };  
+    };
 
-  callSendAPI(messageData);
+    callSendAPI(messageData);
 }
 
 /*
@@ -410,65 +459,65 @@ function sendGenericMessage(recipientId) {
  *
  */
 function sendReceiptMessage(recipientId) {
-  // Generate a random receipt ID as the API requires a unique ID
-  var receiptId = "order" + Math.floor(Math.random()*1000);
+    // Generate a random receipt ID as the API requires a unique ID
+    var receiptId = "order" + Math.floor(Math.random() * 1000);
 
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message:{
-      attachment: {
-        type: "template",
-        payload: {
-          template_type: "receipt",
-          recipient_name: "Peter Chang",
-          order_number: receiptId,
-          currency: "USD",
-          payment_method: "Visa 1234",        
-          timestamp: "1428444852", 
-          elements: [{
-            title: "Oculus Rift",
-            subtitle: "Includes: headset, sensor, remote",
-            quantity: 1,
-            price: 599.00,
-            currency: "USD",
-            image_url: "http://messengerdemo.parseapp.com/img/riftsq.png"
-          }, {
-            title: "Samsung Gear VR",
-            subtitle: "Frost White",
-            quantity: 1,
-            price: 99.99,
-            currency: "USD",
-            image_url: "http://messengerdemo.parseapp.com/img/gearvrsq.png"
-          }],
-          address: {
-            street_1: "1 Hacker Way",
-            street_2: "",
-            city: "Menlo Park",
-            postal_code: "94025",
-            state: "CA",
-            country: "US"
-          },
-          summary: {
-            subtotal: 698.99,
-            shipping_cost: 20.00,
-            total_tax: 57.67,
-            total_cost: 626.66
-          },
-          adjustments: [{
-            name: "New Customer Discount",
-            amount: -50
-          }, {
-            name: "$100 Off Coupon",
-            amount: -100
-          }]
+    var messageData = {
+        recipient: {
+            id: recipientId
+        },
+        message: {
+            attachment: {
+                type: "template",
+                payload: {
+                    template_type: "receipt",
+                    recipient_name: "Peter Chang",
+                    order_number: receiptId,
+                    currency: "USD",
+                    payment_method: "Visa 1234",
+                    timestamp: "1428444852",
+                    elements: [{
+                        title: "Oculus Rift",
+                        subtitle: "Includes: headset, sensor, remote",
+                        quantity: 1,
+                        price: 599.00,
+                        currency: "USD",
+                        image_url: "http://messengerdemo.parseapp.com/img/riftsq.png"
+                    }, {
+                        title: "Samsung Gear VR",
+                        subtitle: "Frost White",
+                        quantity: 1,
+                        price: 99.99,
+                        currency: "USD",
+                        image_url: "http://messengerdemo.parseapp.com/img/gearvrsq.png"
+                    }],
+                    address: {
+                        street_1: "1 Hacker Way",
+                        street_2: "",
+                        city: "Menlo Park",
+                        postal_code: "94025",
+                        state: "CA",
+                        country: "US"
+                    },
+                    summary: {
+                        subtotal: 698.99,
+                        shipping_cost: 20.00,
+                        total_tax: 57.67,
+                        total_cost: 626.66
+                    },
+                    adjustments: [{
+                        name: "New Customer Discount",
+                        amount: -50
+                    }, {
+                        name: "$100 Off Coupon",
+                        amount: -100
+                    }]
+                }
+            }
         }
-      }
-    }
-  };
+    };
 
-  callSendAPI(messageData);
+    callSendAPI(messageData);
 }
 
 /*
@@ -477,33 +526,34 @@ function sendReceiptMessage(recipientId) {
  *
  */
 function callSendAPI(messageData) {
-  request({
-    uri: 'https://graph.facebook.com/v2.6/me/messages',
-    qs: { access_token: PAGE_ACCESS_TOKEN },
-    method: 'POST',
-    json: messageData
+    request({
+        uri: 'https://graph.facebook.com/v2.6/me/messages',
+        qs: {
+            access_token: PAGE_ACCESS_TOKEN
+        },
+        method: 'POST',
+        json: messageData
 
-  }, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var recipientId = body.recipient_id;
-      var messageId = body.message_id;
+    }, function(error, response, body) {
+        if (!error && response.statusCode == 200) {
+            var recipientId = body.recipient_id;
+            var messageId = body.message_id;
 
-      console.log("Successfully sent generic message with id %s to recipient %s", 
-        messageId, recipientId);
-    } else {
-      console.error("Unable to send message.");
-      console.error(response);
-      console.error(error);
-    }
-  });  
+            console.log("Successfully sent generic message with id %s to recipient %s",
+                messageId, recipientId);
+        } else {
+            console.error("Unable to send message.");
+            console.error(response);
+            console.error(error);
+        }
+    });
 }
 
 // Start server
 // Webhooks must be available via SSL with a certificate signed by a valid 
 // certificate authority.
 app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
+    console.log('Node app is running on port', app.get('port'));
 });
 
 module.exports = app;
-

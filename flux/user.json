@@ -1,0 +1,16 @@
+{
+  "what-is-bot-bank-q10": {
+    "categoryTitle": "What is Bot bank! ?",
+    "request": "What is bank of the test?",
+    "responses": ["Bank of the Test is the market leader in Botland and part of the Botbank group, the number one bank in the Eurozone for deposits and one of the six most secure banks in the world according to Standard & Poor's.",
+                "The group has more than 200,000 employees in 84 countries."],
+    "links": []
+  },
+  "product-services-q100": {
+    "categoryTitle": "Product & Services",
+    "request": "What is direct reserve?",
+    "responses": ["A reserve of €1.250 that you can use to pay car maintenance costs, replace the computer that suddenly dies or offer the most expensive gift on your friend’s wedding list. You can move into negative territory on your current account, something that can come in handy, and you only pay a monthly interest on the amount used."],
+    "subCategoryTitle": "Direct Reserve",
+    "links": []    
+  }
+}
