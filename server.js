@@ -48,6 +48,9 @@ app.use(session({ secret: process.env.SESSION_SECRET, resave: true, saveUninitia
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(express.cookieParser('<E7;6r@A`PJTc6s+'));
+app.use(express.session());
+
 app.get('/', HomeController.index);
 app.get('/contact', contactController.contactGet);
 app.post('/contact', contactController.contactPost);
