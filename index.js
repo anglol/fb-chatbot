@@ -21,10 +21,10 @@ bot.on('message', function(payload, reply){
   api.call(senderId, text, function(text){
     
     bot.getProfile(senderId, function(err, profile){
-      if (err) throw err;
-
+      if (err) console.log(err);
+      
       reply({ text }, function(err){
-        if (err) throw err;
+        if (err) console.log(err);
         console.log(`Echoed back to ${profile.first_name} ${profile.last_name}: ${text}`)
       });
     });
