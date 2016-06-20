@@ -1,6 +1,6 @@
 const http = require('http'),
       Bot = require('messenger-bot'),
-      api = require('./api')
+      api = require('./api');
 
 var bot = new Bot({
   token: 'EAAOX9MyzB74BAFuiOtSRxgObuSxXUVkJe37W9qrRDtAFQNeEQE9TcWTuGZBSgQHyDoH20Tk2MgpUinCOE78tQRPUnhFMKPnZBZAdHRHj06KFiM1a0o8lzuHSsCGaZBd9BX5i0q6QsB8CVbEisDZA5fzuDMmX3Oohsfrx23ICuZBwZDZD',
