@@ -1,6 +1,7 @@
 const http = require('http'),
       Bot = require('messenger-bot'),
-      api = require('./api'),
+      api = require('./modules/api'),
+      apologies = require('./modules/apologies'),
       config = require('config');
 
 var bot = new Bot({
@@ -23,14 +24,23 @@ bot.on('message', function(payload, reply){
   api.call(senderId, text, function(text){
     
     bot.getProfile(senderId, function(err, profile){
-      if (err) console.log('--- error ---', err, '--- error ---');
+      if (err){
+        console.log('--- error ---');
+        console.log(err);
+        console.log('--- error ---');
+      }
       
       if( text.length < 1){
-        text = 'NOP';
+        text = apologies.getRandom();
       }
         
       reply({ text }, function(err){
-        if (err) console.log('--- error ---', err, '--- error ---');
+        if (err){
+          console.log('--- error ---');
+          console.log(err);
+          console.log('--- error ---');
+        }
+
         console.log(`Echoed back to ${profile.first_name} ${profile.last_name}: ${text}`)
       });
     });
