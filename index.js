@@ -1,11 +1,12 @@
 const http = require('http'),
       Bot = require('messenger-bot'),
-      api = require('./api');
+      api = require('./api'),
+      config = require('config');
 
 var bot = new Bot({
-  token: 'EAAOX9MyzB74BAFuiOtSRxgObuSxXUVkJe37W9qrRDtAFQNeEQE9TcWTuGZBSgQHyDoH20Tk2MgpUinCOE78tQRPUnhFMKPnZBZAdHRHj06KFiM1a0o8lzuHSsCGaZBd9BX5i0q6QsB8CVbEisDZA5fzuDMmX3Oohsfrx23ICuZBwZDZD',
-  //verify: 'Ijh02V8lXzvCKrSzyTqlxJYiIl7etG6Z',
-  app_secret: 'd5617a24f2a8a5c297668b085aa58e8c'
+  token: process.env.FACEBOOK_PAGE_TOKEN,
+  verify: process.env.FACEBOOK_VERIFICATION_TOKEN,
+  app_secret: process.env.FACEBOOK_APP_SECRET
 });
 
 bot.on('error', function(err){
