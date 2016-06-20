@@ -16,11 +16,11 @@ bot.on('error', function(err){
 bot.on('message', function(payload, reply){
   console.log(text);
   var text = payload.message.text,
-      sendId = payload.sender.id;
+      senderId = payload.sender.id;
 
   api.call(senderId, text, function(text){
     
-    bot.getProfile(sendId, function(err, profile){
+    bot.getProfile(senderId, function(err, profile){
       if (err) throw err;
 
       reply({ text }, function(err){
