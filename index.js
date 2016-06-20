@@ -25,6 +25,10 @@ bot.on('message', function(payload, reply){
     bot.getProfile(senderId, function(err, profile){
       if (err) console.log('--- error ---', err, '--- error ---');
       
+      if( text.length < 1){
+        text = 'NOP';
+      }
+        
       reply({ text }, function(err){
         if (err) console.log('--- error ---', err, '--- error ---');
         console.log(`Echoed back to ${profile.first_name} ${profile.last_name}: ${text}`)
