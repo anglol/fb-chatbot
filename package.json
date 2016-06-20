@@ -13,6 +13,6 @@
     "apiai": "^2.0.5",
     "config": "^1.20.4",
     "jsonfile": "^2.3.1",
-    "messenger-bot": "^2.3.0"
+    "messenger-bot": "https://github.com/anglol/messenger-bot.git"
   }
 }

@@ -2,6 +2,29 @@
 
 var exports = module.exports = {};
 
+exports.greeting = function(){
+  var obj = {
+    "attachment": {
+      "type": "template",
+      "payload": {
+        "template_type": "generic",
+        "elements": [{
+          "title": "Welcome to BotBank !",
+          "item_url": "https://www.google.com",
+          "image_url": "https://d13yacurqjgara.cloudfront.net/users/274876/screenshots/2787793/2.jpg",
+          "subtitle": "Welcome to our new chat bot !",
+          "buttons": [{
+            "type": "web_url",
+            "title": "Know more",
+            "url": "https://www.google.com"
+          }]
+        }]
+      }
+    }
+  };
+  return obj;
+}
+
 exports.generic = function(){
   
   var obj = {
@@ -58,8 +81,5 @@ exports.generic = function(){
       }
     }
   };
-  
-  console.log(obj.attachment.payload.elements);
-
   return obj;
 }
