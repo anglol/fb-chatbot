@@ -23,7 +23,7 @@ bot.on('postback', function(payload, reply){
 });
 
 bot.on('message', function(payload, reply){
-
+  console.log(payload);
   var text = payload.message.text;
 
   api.call(payload.sender.id, text, function(text){
