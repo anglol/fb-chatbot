@@ -13,6 +13,7 @@ bot.on('error', function(err){
 });
 
 bot.on('message', function(payload, reply){
+  console.log(text);
   var text = payload.message.text,
       sendId = payload.sender.id;
 
