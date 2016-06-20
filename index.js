@@ -14,17 +14,19 @@ bot.on('error', function(err){
 });
 
 bot.on('message', function(payload, reply){
-  console.log(text);
+
   var text = payload.message.text,
       senderId = payload.sender.id;
 
+  console.log(text);
+  
   api.call(senderId, text, function(text){
     
     bot.getProfile(senderId, function(err, profile){
-      if (err) console.log(err);
+      if (err) console.log('--- error ---', err, '--- error ---');
       
       reply({ text }, function(err){
-        if (err) console.log(err);
+        if (err) console.log('--- error ---', err, '--- error ---');
         console.log(`Echoed back to ${profile.first_name} ${profile.last_name}: ${text}`)
       });
     });
