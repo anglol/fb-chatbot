@@ -17,6 +17,13 @@ bot.on('error', function(err){
   console.log(err.message)
 });
 
+bot.on('postback', function(payload, reply){
+  var text = "Hello World";
+  reply({ text }, function(err){
+    console.log(err);
+  });
+})
+
 bot.on('message', function(payload, reply){
 
   var text = payload.message.text;
