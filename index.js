@@ -5,8 +5,6 @@ const http = require('http'),
       apologies = require('./modules/apologies'),
       payloads = require('./modules/payloads');
 
-console.log(payloads.generic());
-
 var bot = new Bot({
   token: process.env.FACEBOOK_PAGE_TOKEN,
   verify: process.env.FACEBOOK_VERIFICATION_TOKEN,
@@ -22,7 +20,7 @@ bot.on('postback', function(payload, reply){
   reply({ text }, function(err){
     console.log(err);
   });
-})
+});
 
 bot.on('message', function(payload, reply){
 
@@ -34,7 +32,7 @@ bot.on('message', function(payload, reply){
       if (err) console.log(err);
       if( text.length < 1) text = apologies.getRandom();
         
-      reply(payloads.generic(), function(err){
+      reply({ text }, function(err){
         if (err) console.log(err);
         console.log(`Echoed back to ${profile.first_name} ${profile.last_name}: ${text}`)
       });
